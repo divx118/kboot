@@ -1,0 +1,60 @@
+#!/bin/sh
+
+PRODUCT_NAME=$1
+PRODUCT_REVISION=$2
+STORAGE_DEV=$3
+STORAGE_DIR=/mnt/storage
+RAWFS_DEV=$4
+RAWFS_DIR=/mnt/rawfs
+
+# busybox
+MOUNT=/bin/mount
+IFCONFIG=/sbin/ifconfig
+INETD=/usr/sbin/inetd
+SLEEP=/bin/sleep
+PYTHON=/usr/bin/python
+POWEROFF=/sbin/poweroff
+CAT=/bin/cat
+GREP=/bin/grep
+CUT=/usr/bin/cut
+
+# Prepare filesystem
+$MOUNT -t proc proc /proc
+$MOUNT -t usbfs none /proc/bus/usb
+$MOUNT -t sysfs sysfs /sys
+$MOUNT -t devpts devpts /dev/pts
+$MOUNT -t tmpfs tmpfs /dev/shm
+
+$MOUNT $STORAGE_DEV $STORAGE_DIR
+$MOUNT $RAWFS_DEV $RAWFS_DIR
+
+$IFCONFIG lo 127.0.0.1 netmask 255.0.0.0 up
+$IFCONFIG usb0 192.168.10.1 up
+$INETD
+
+BOARDNUM=0
+
+case "$PRODUCT_NAME" in
+	A28)	BOARDNUM=1
+	;;
+	A32)	BOARDNUM=2
+	;;
+	A32SD)	BOARDNUM=3
+	;;
+	A35*)	BOARDNUM=4
+	;;
+	A43)	BOARDNUM=5
+	;;
+	A70S)	BOARDNUM=6
+	;;
+	A70H*)	BOARDNUM=7
+	;;
+	A101IT)	BOARDNUM=8
+	;;
+esac
+
+$PYTHON /opt/menu/kboot.py $BOARDNUM $STORAGE_DIR
+
+$POWEROFF -f
+
+# EOF
