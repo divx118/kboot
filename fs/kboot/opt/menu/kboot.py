@@ -32,10 +32,12 @@ def kexec_launch():
 
 # load the kernel to boot into
 def kexec_load(zimage, initramfs):
-   ret = subprocess.call(["/usr/sbin/kexec","-l",zimage,"--initrd",initramfs])
+   ret = subprocess.call(["/usr/sbin/kexec","-l",zimage,"--initrd="+initramfs])
    if ret:
       print "kexec load error"
       return
+   ret = subprocess.call(["/bin/umount","/mnt/rawfs"])
+   ret = subprocess.call(["/bin/umount","/mnt/storage"])
 
 # load and execute kernel
 def kboot(zimage,initram):
@@ -79,7 +81,10 @@ def unpack(image):
       initrd.close()
       rawfile.close()
 
-      kboot(kernel_file, initrd_file)
+      kexec_load(kernel_file, initrd_file)
+      os.remove(kernel_file)
+      os.remove(initrd_file)
+      kexec_launch()
 
    rawfile.close()
 
@@ -162,7 +167,7 @@ def initmenu():
    elif boardnum == 5:
       resolution = (480,854)
    elif boardnum == 6 or boardnum == 7:
-      resolution = (800,400)
+      resolution = (800,480)
    else:
       resolution = (1024,600)
 
