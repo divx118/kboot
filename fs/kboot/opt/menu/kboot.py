@@ -155,7 +155,7 @@ def initmenu():
    pygame.mouse.set_visible(0)
 
    script_path = os.path.dirname(sys.argv[0])
-   boardnum = sys.argv[1]
+   boardnum = int(sys.argv[1])
    storage = sys.argv[2]
 
    if boardnum == 1:
