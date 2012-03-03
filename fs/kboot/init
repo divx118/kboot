@@ -28,9 +28,26 @@ $MOUNT -t tmpfs tmpfs /dev/shm
 $MOUNT $STORAGE_DEV $STORAGE_DIR
 $MOUNT $RAWFS_DEV $RAWFS_DIR
 
-$IFCONFIG lo 127.0.0.1 netmask 255.0.0.0 up
-$IFCONFIG usb0 192.168.10.1 up
-$INETD
+CONFIG_FILE="$STORAGE_DIR/kboot/conf/config.ini"
+SECTION="init"
+
+eval `sed -e 's/[[:space:]]*\=[[:space:]]*/=/g' \
+    -e 's/;.*$//' \
+    -e 's/[[:space:]]*$//' \
+    -e 's/^[[:space:]]*//' \
+    -e "s/^\(.*\)=\([^\"']*\)$/\1=\"\2\"/" \
+   < $CONFIG_FILE \
+    | sed -n -e "/^\[$SECTION\]/,/^\s*\[/{/^[^;].*\=.*/p;}"`
+
+IP="192.168.0.1"
+if [[ $usbip ]]; then
+	IP="$usbip"
+fi
+if [[ $telnet == "1" ]]; then
+	$IFCONFIG lo 127.0.0.1 netmask 255.0.0.0 up
+	$IFCONFIG usb0 $IP up
+	$INETD
+fi
 
 BOARDNUM=0
 
@@ -53,7 +70,7 @@ case "$PRODUCT_NAME" in
 	;;
 esac
 
-$PYTHON /opt/menu/kboot.py $BOARDNUM $STORAGE_DIR
+$PYTHON /opt/menu/kboot.py $BOARDNUM $STORAGE_DIR $5
 
 $POWEROFF -f
 

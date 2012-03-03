@@ -100,6 +100,7 @@ GRAY = (92, 97, 98)
 ## This is a user event that should be sent whenever the game state is changed
 #  (at the main game loop level)
 EVENT_CHANGE_STATE = pygame.USEREVENT + 1
+EVENT_CHECK_KEY_PRESSED = pygame.USEREVENT + 2
 
 #-------------------------------------------------------------------------------
 #---[ cMenu Class ]-------------------------------------------------------------
@@ -140,10 +141,10 @@ class cMenu:
    #  Initialize the class
    #
    def __init__(self, x, y, h_pad, v_pad, orientation, number, background,
-                buttonList):
+                u_color, s_color, size, buttonList):
       ## menu items
       self.menu_items = []                      # List of menu items
-      self.font = pygame.font.Font(None, 32)    # Font to use
+      self.font = pygame.font.Font(None, size)    # Font to use
 
       self.x = x                                # Top left corner (of surface)
       self.y = y                                # relative to the screen/window
@@ -153,8 +154,8 @@ class cMenu:
       self.vertical_padding = v_pad             # See description above
 
       self.selection = 0                        # The currently selected button
-      self.u_color = GRAY                       # Color for unselected text
-      self.s_color = BLUE                       # Color for selected text
+      self.u_color = u_color                    # Color for unselected text
+      self.s_color = s_color                    # Color for selected text
       self.image_highlight_color = BLUE         # Color for the image highlights
       self.image_highlight_offset = 2           # Addition padding around image
                                                 # buttons only for the highlight
