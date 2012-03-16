@@ -1,10 +1,9 @@
 #!/bin/sh
 
-PRODUCT_NAME=$1
-PRODUCT_REVISION=$2
-STORAGE_DEV=$3
+# source init_lib
+. /etc/scripts/init_lib.sh
+
 STORAGE_DIR=/mnt/storage
-RAWFS_DEV=$4
 RAWFS_DIR=/mnt/rawfs
 
 # busybox
@@ -17,6 +16,26 @@ POWEROFF=/sbin/poweroff
 CAT=/bin/cat
 GREP=/bin/grep
 CUT=/usr/bin/cut
+ZCAT=/bin/zcat
+LN="/bin/ln -s"
+
+# abcbox
+ABCBOX=/bin/abcbox
+GET_INFO=/bin/get_info
+GET_STORAGE_PROP=/bin/get_storage_prop
+RFBI_REFRESH=/bin/rfbi_refresh
+USB_TS_ENABLE=/bin/usb_ts_enable
+FB_WRITE=/bin/fb_write
+KX_CHECKER=/bin/kx_checker
+REBOOT_INTO=/bin/reboot_into
+
+$LN $ABCBOX $GET_INFO
+$LN $ABCBOX $GET_STORAGE_PROP
+$LN $ABCBOX $RFBI_REFRESH
+$LN $ABCBOX $USB_TS_ENABLE
+$LN $ABCBOX $FB_WRITE
+$LN $ABCBOX $KX_CHECKER
+$LN $ABCBOX $REBOOT_INTO
 
 # Prepare filesystem
 $MOUNT -t proc proc /proc
@@ -24,9 +43,41 @@ $MOUNT -t usbfs none /proc/bus/usb
 $MOUNT -t sysfs sysfs /sys
 $MOUNT -t devpts devpts /dev/pts
 $MOUNT -t tmpfs tmpfs /dev/shm
+ln -s /proc/mounts /etc/mtab
 
-$MOUNT $STORAGE_DEV $STORAGE_DIR
-$MOUNT $RAWFS_DEV $RAWFS_DIR
+# Get board and product information
+PRODUCT_NAME=`$GET_INFO p`
+PRODUCT_REVISION=`$GET_INFO r`
+
+set_charger_state lo
+
+log "init get_info - PRODUCT $PRODUCT_NAME ($PRODUCT_REVISION) - AOSFILENAME $AOS_FILENAME"
+
+wait_block_devices rawfs
+
+echo 2048 > /sys/block/mmcblk0/queue/max_sectors_kb
+echo 2048 > /sys/block/mmcblk1/queue/max_sectors_kb
+
+mount_p rawfs || init_fail "mount rawfs fail"
+
+display_banner $PRODUCT_NAME $PRODUCT_REVISION
+
+# make permanent reboot in sde
+$REBOOT_INTO -s sde
+
+# check init file
+$KX_CHECKER -f /mnt/rawfs/init
+ki_status=$?
+
+# XXX: do hdd_lock checks for A70H
+wait_block_devices storage
+
+mount_p storage || init_fail "mount storage fail"
+
+STORAGE_DEV=`get_mount_info d storage`
+RAWFS_DEV=`get_mount_info d rawfs`
+
+$USB_TS_ENABLE --detach
 
 CONFIG_FILE="$STORAGE_DIR/kboot/conf/config.ini"
 SECTION="init"
@@ -70,7 +121,7 @@ case "$PRODUCT_NAME" in
 	;;
 esac
 
-$PYTHON /opt/menu/kboot.py $BOARDNUM $STORAGE_DIR $5
+$PYTHON /opt/menu/kboot.py $BOARDNUM $STORAGE_DIR $ki_status
 
 $POWEROFF -f
 

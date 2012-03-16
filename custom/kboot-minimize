@@ -1,0 +1,24 @@
+#!/bin/sh
+
+ABCBOX_LOCATION=/path/to/abcbox
+PWD=`pwd`
+OUTPUT_TARGET=`pwd`/output/target
+
+cd $OUTPUT_TARGET/usr/lib/python2.7
+
+rm -rf encodings/ email/ distutils/ hotshot/ idlelib/ json/ sqlite3/ unittest/ wsgiref* ctypes/ logging/ compiler/ plat-linux2/
+rm -rf audiodev.pyc Bas* calendar.pyc CGIHTTPServer.pyc cgi* codecs.pyc cookielib.pyc Cookie.pyc csv.pyc DocXMLRPCServer.pyc ftplib.pyc html* HTMLParser.pyc httplib.pyc imaplib.pyc LICENSE.txt mac* mail* mime* MimeWriter.pyc netrc.pyc nntplib.pyc nt* os2emxpath.pyc pkgutil.pyc sgmllib.pyc Simple* smtp* sunau* tarfile.pyc telnetlib.pyc url* wave.pyc webbrowser.pyc xml* gzip.pyc zipfile.pyc toaiff.pyc xdrlib.pyc
+
+rm -f site-packages/pygame/*.html
+rm -rf site-packages/pygame/examples
+rm -f site-packages/pygame/pygame.ico
+rm -f site-packages/pygame/pygame_icon.*
+rm -f site-packages/pygame/LGPL
+rm -f site-packages/README
+rm -f site-packages/pygame-1.9.2pre-py2.7.egg-info
+
+rm -f $OUTPUT_TARGET/usr/bin/smtpd.py
+
+cd $PWD
+
+cp $ABCBOX_LOCATION $OUTPUT_TARGET/bin/

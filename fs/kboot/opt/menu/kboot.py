@@ -9,7 +9,6 @@ import pygame
 import subprocess
 import struct
 import time
-import threading
 import ConfigParser
 
 from stat import *
@@ -20,7 +19,7 @@ from image import *
 key_pressed = False
 last_selection_file = "/dev/null"
 last_selection = 0
-t = None
+timeout = 30
 
 def write_last(line):
    global last_selection_file
@@ -48,20 +47,21 @@ def kexec_launch():
 
 # load the kernel to boot into
 def kexec_load(zimage, initramfs, cmdline):
-   cmd = ["/usr/sbin/kexec", "-l", zimage, "--initrd=" + initramfs]
+   cmd = ['/usr/sbin/kexec', '-l', zimage, '--initrd', initramfs]
    if cmdline:
-      cmd.append('--command-line="' + cmdline + '"')
-   subprocess.call(cmd)
+      cmd.append('--command-line')
+      cmd.append(cmdline.strip())
    subprocess.call(["/bin/sync"])
    subprocess.call(["/bin/umount","/mnt/rawfs"])
+   subprocess.call(cmd)
 
 # load and execute kernel
 def kboot(zimage, initram):
    path = os.path.dirname(zimage)
    cmdline = None
    if os.path.exists(os.path.join(path, 'cmdline')):
-      cmd = open(os.path.join(dirname, names[names.index('cmdline')]), "r")
-      cmdline = cmd.read().replace("\r\n", " ")
+      cmd = open(os.path.join(path, 'cmdline'), "r")
+      cmdline = cmd.read().replace("\r\n", " ").replace("\n", " ")
       cmd.close()
    write_last("custom:" + path)
    kexec_load(zimage, initram, cmdline)
@@ -117,10 +117,6 @@ def halt():
    pygame.quit()
    sys.exit()
 
-# timer loop
-def last_boot():
-   pygame.event.post(pygame.event.Event(EVENT_CHECK_KEY_PRESSED, key = 0))
-
 # no comment
 def nofunc():
    pass
@@ -128,7 +124,7 @@ def nofunc():
 # menu and submenu loop
 def loopmenu(menu, menutitle, bkg, title_color, title_size):
    global key_pressed
-   global last_selection_file
+   global timeout
 
    screen = menu.draw_surface
 
@@ -151,11 +147,24 @@ def loopmenu(menu, menutitle, bkg, title_color, title_size):
          if bkg:
             screen.blit(bkg,(0,0))
          screen.blit(title,(10,10))
-         pygame.display.flip()
          rect_list, func = menu.update(e, state)
+         pygame.display.flip()
 
       if e.type == EVENT_CHECK_KEY_PRESSED:
-         if key_pressed == False:
+         if key_pressed == True:
+            pygame.time.set_timer(EVENT_CHECK_KEY_PRESSED, 0)
+            title = desc_font.render(menutitle, True, title_color)
+         else:
+            timeout -= 1
+            title = desc_font.render(menutitle + " (default in %ds)" % timeout, True, title_color)
+         screen.fill(0)
+         if bkg:
+            screen.blit(bkg,(0,0))
+         screen.blit(title,(10,10))
+         rect_list, func = menu.update(e, state, True)
+         pygame.display.flip()
+
+         if timeout == 0:
             last_file = open(last_selection_file, "r")
             line = last_file.read()
             bootline = line.split(':')
@@ -173,9 +182,9 @@ def loopmenu(menu, menutitle, bkg, title_color, title_size):
       # in a more complex program, definitely make the states global variables
       # so that you can refer to them by a name
       if e.type == pygame.KEYDOWN:
-         key_pressed = True
-         if t:
-            t.cancel()
+         if key_pressed == False:
+            pygame.event.post(pygame.event.Event(EVENT_CHECK_KEY_PRESSED, key = 0))
+            key_pressed = True
          rect_list, func = menu.update(e, state)
          if func == None:
             pygame.event.post(pygame.event.Event(EVENT_CHANGE_STATE, key = 0))
@@ -201,7 +210,7 @@ def osdirwalk(items, dirname, names):
 def initmenu():
    global last_selection
    global last_selection_file
-   global t
+   global timeout
 
    title_color = WHITE
    menu_ucolor = GRAY
@@ -318,11 +327,9 @@ def initmenu():
    if last_selection != 0:
       last_selection_file = storage + "/kboot/conf/.last_selection"
       if os.path.exists(last_selection_file):
-         timeout = 30
+         pygame.time.set_timer(EVENT_CHECK_KEY_PRESSED, 1000)
          if config.has_option('kboot', 'last_selection_timeout'):
             timeout = config.getint('kboot', 'last_selection_timeout')
-         t = threading.Timer(timeout, last_boot)
-         t.start()
 
    loopmenu(mainmenu, "Kboot", bkg, title_color, title_size)
 

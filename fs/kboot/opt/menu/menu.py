@@ -596,13 +596,17 @@ class cMenu:
    #
    #  Update the menu surface, redraw it to the stored surface self.draw_surface
    #
-   def update(self, e, c_state):
-      redraw_full_menu = False
-
+   def update(self, e, c_state, timeout = False):
       self.selection_prev = self.selection
       o = self.orientation
       s = self.selection
       n = self.change_number
+
+      if timeout == True:
+         redraw_full_menu = True
+         original_contained_rect = None
+      else:
+         redraw_full_menu = False
 
       if hasattr(e, 'scancode'):
          if e.scancode == 114:
