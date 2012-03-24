@@ -1,0 +1,3 @@
+Kboot, a kexec booloader
+
+Before compiling, modify in custom/kboot-minimize ABCBOX variable to point to abcbox binary
