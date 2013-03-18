@@ -63,6 +63,20 @@ def kboot(zimage, initram):
       cmd = open(os.path.join(path, 'cmdline'), "r")
       cmdline = cmd.read().replace("\r\n", " ").replace("\n", " ")
       cmd.close()
+   # Check if there is a menu.lst. With this we can boot directly through multiroot openaos,
+   # without showing the openaos menu. The variables needed are temporarely stored in the openaos_init.ini file
+   # They are immediately erased from the file when loaded with function writeOpenAOSFeatures
+   if os.path.exists(os.path.join(path, 'menu.lst')):
+      menu_lst= open (os.path.join(path, 'menu.lst'),"r")
+      menu_path = menu_lst.read().replace("\r\n", "").replace("\n", "")
+      menu_lst.close()
+      menu_options=menu_path.split("|")
+      subprocess.call("/bin/echo ROOTFS_DEVICE=" + menu_options[1] + " >> "+sys.argv[2]+"/openaos/disabled/openaos_init.ini", shell=True)
+      subprocess.call("/bin/echo ROOTFS_IMAGE=" + menu_options[2] + " >> "+sys.argv[2]+"/openaos/disabled/openaos_init.ini", shell=True)
+      subprocess.call("/bin/echo ROOTFS_INIT=" + menu_options[3] + " >> "+sys.argv[2]+"/openaos/disabled/openaos_init.ini", shell=True)
+      subprocess.call("/bin/echo ROOTFS_FBMODE=" + menu_options[4] + " >> "+sys.argv[2]+"/openaos/disabled/openaos_init.ini", shell=True)
+      subprocess.call("/bin/echo DIRECT_BOOT=1 >> "+sys.argv[2]+"/openaos/disabled/openaos_init.ini", shell=True)
+      subprocess.call("/bin/echo writeOpenAOSFeatures >> "+sys.argv[2]+"/openaos/disabled/openaos_init.ini", shell=True)
    write_last("custom:" + path)
    kexec_load(zimage, initram, cmdline)
    kexec_launch()
